@@ -1,0 +1,50 @@
+{
+  "name": "ink-three",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Three.js ASCII renderer component for Ink",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "example:primitive": "npx tsx examples/primitive.tsx",
+    "example:gltf": "npx tsx examples/gltf.tsx"
+  },
+  "keywords": [
+    "ink",
+    "three",
+    "threejs",
+    "ascii",
+    "cli",
+    "terminal",
+    "3d",
+    "react",
+    "tui"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "ink": ">=4.0.0",
+    "react": ">=18.0.0",
+    "three": ">=0.150.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@types/react": "^18.0.0",
+    "@types/three": "^0.150.0",
+    "ink": "^4.0.0",
+    "react": "^18.0.0",
+    "three": "^0.170.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
