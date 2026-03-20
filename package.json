@@ -18,7 +18,8 @@
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch",
     "example:primitive": "npx tsx examples/primitive.tsx",
-    "example:gltf": "npx tsx examples/gltf.tsx"
+    "example:gltf": "npx tsx examples/gltf.tsx",
+    "example:scene": "npx tsx examples/scene.tsx"
   },
   "keywords": [
     "ink",

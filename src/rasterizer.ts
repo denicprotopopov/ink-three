@@ -1,5 +1,7 @@
 import {Matrix4, Vector3} from "three";
 import {Triangle} from "./geometry.js";
+import type {Light} from "./lights.js";
+import { DEFAULT_LIGHTS, computeLighting  } from "./lights.js";
 
 const DEFAULT_CHARS = ' .,:;+=*#%@';
 const CHAR_ASPECT = 0.5;
@@ -16,6 +18,7 @@ type Proj = { sx: number; sy: number; dz: number };
  * @param rows      - Terminal row count.
  * @param eyeZ      - Camera Z distance (zoom level).
  * @param chars     - ASCII character ramp, dark to light.
+ * @param lights    - List of lights (default: single directional light).
  * @returns A multi-line string representing the ASCII frame.
  */
 
@@ -26,6 +29,7 @@ export function renderFrame(
   rows: number,
   eyeZ: number,
   chars: string = DEFAULT_CHARS,
+  lights: Light[] = DEFAULT_LIGHTS,
 ): string {
   const vpW = cols * CHAR_ASPECT;
   const vpH = rows;
@@ -34,8 +38,6 @@ export function renderFrame(
   const rotX = new Matrix4().makeRotationX(time * 0.7);
   const rotY = new Matrix4().makeRotationY(time);
   const rot = new Matrix4().multiplyMatrices(rotX, rotY);
-
-  const light = new Vector3(1, 1, 1).normalize();
 
   // Reused projection outputs to reduce GC churn
   const pa: Proj = { sx: 0, sy: 0, dz: 0 };
@@ -79,7 +81,8 @@ export function renderFrame(
 
     if (normal.z < 0) continue;
 
-    const shade = Math.max(0, normal.dot(light));
+    const centroid = new Vector3().addVectors(a, b).add(c).divideScalar(3);
+    const shade = computeLighting(normal, centroid, lights);
     const charIdx = Math.min(
       chars.length - 1,
       Math.floor(shade * (chars.length - 1)),

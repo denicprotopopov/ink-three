@@ -7,3 +7,5 @@ export { default } from './ThreeAscii.js';
 export { loadGLTF } from './loader.js';
 export { extractTriangles, normalizeGeometry } from './geometry.js';
 export { renderFrame } from './rasterizer.js';
+export { DEFAULT_LIGHTS, ambientLight, directionalLight, pointLight } from './lights.js';
+export type { Light, AmbientLight, DirectionalLight, PointLight } from './lights.js';

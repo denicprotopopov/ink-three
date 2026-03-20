@@ -4,6 +4,8 @@ import { BufferGeometry, Vector3, TorusKnotGeometry } from 'three';
 import { extractTriangles, normalizeGeometry } from './geometry.js';
 import type { Triangle } from './geometry.js';
 import { renderFrame } from './rasterizer.js';
+import type {Light} from "./lights.js";
+import { DEFAULT_LIGHTS} from "./lights.js";
 
 export interface ThreeAsciiProps {
   /** A Three.js BufferGeometry to render (e.g. new TorusKnotGeometry(...)) */
@@ -22,6 +24,8 @@ export interface ThreeAsciiProps {
   cols?: number;
   /** Override row count (default: process.stdout.rows - 3) */
   rows?: number;
+  /** Lights in the scene (default: single directional light) */
+  lights?: Light[];
 }
 
 const DEFAULT_FPS = 20;
@@ -39,6 +43,7 @@ export function ThreeAscii({
   showHud = true,
   cols: colsProp,
   rows: rowsProp,
+  lights = DEFAULT_LIGHTS,
 }: ThreeAsciiProps): React.ReactElement {
   const [zoom, setZoom] = useState(initialZoom);
   const [frame, setFrame] = useState('');
@@ -71,11 +76,11 @@ export function ThreeAscii({
       const time = (Date.now() - start) / 1000;
       const cols = colsProp ?? (process.stdout.columns || 80);
       const rows = rowsProp ?? Math.max(1, (process.stdout.rows || 24) - 3);
-      setFrame(renderFrame(resolvedTriangles, time, cols, rows, zoom, chars));
+      setFrame(renderFrame(resolvedTriangles, time, cols, rows, zoom, chars, lights));
     }, 1000 / fps);
 
     return () => clearInterval(interval);
-  }, [resolvedTriangles, zoom, fps, chars, colsProp, rowsProp]);
+  }, [resolvedTriangles, zoom, fps, chars, colsProp, rowsProp, lights]);
 
   return (
     <Box flexDirection="column">
