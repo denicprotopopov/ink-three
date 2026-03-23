@@ -7,12 +7,27 @@ import { renderFrame, defaultTransform } from './rasterizer.js';
 import type {Light} from "./lights.js";
 import { DEFAULT_LIGHTS} from "./lights.js";
 
+export interface SceneObject {
+  /** Triangles that make up this object. */
+  triangles: Triangle[];
+  /**
+   * Per-object transform function called every frame with elapsed time (seconds).
+   * When omitted, the object stays at its original position (no transform).
+   *
+   * @example
+   * // Disable rotation for this object
+   * getTransform: () => new Matrix4()
+   */
+  getTransform?: (time: number) => Matrix4;
+}
+
 export interface ThreeAsciiProps {
   /** A Three.js BufferGeometry to render (e.g. new TorusKnotGeometry(...)) */
   geometry?: BufferGeometry;
   /** Pre-extracted triangles (e.g. from loadGLTF) — takes priority over geometry */
   triangles?: Triangle[];
   /** Frames per second (default: 20) */
+  objects?: SceneObject[];
   fps?: number;
   /** ASCII character ramp from dark to light (default: ' .,:;+=*#%@') */
   chars?: string;
@@ -52,6 +67,7 @@ const ZOOM_STEP = 0.3;
 export function ThreeAscii({
   geometry,
   triangles: trianglesProp,
+  objects: objectProp,
   fps = DEFAULT_FPS,
   chars,
   initialZoom = DEFAULT_ZOOM,
@@ -65,8 +81,10 @@ export function ThreeAscii({
   const [frame, setFrame] = useState('');
 
   const getTransformRef = React.useRef(getTransform);
+  const objectsRef = React.useRef(objectProp);
   React.useEffect(() => {
     getTransformRef.current = getTransform;
+    objectsRef.current = objectProp;
   });
 
   // Resolve triangles once (or when inputs change)
@@ -93,14 +111,41 @@ export function ThreeAscii({
   // Animation loop
   useEffect(() => {
     const start = Date.now();
+    const identity = new Matrix4();
     const interval = setInterval(() => {
       const time = (Date.now() - start) / 1000;
       const cols = colsProp ?? (process.stdout.columns || 80);
       const rows = rowsProp ?? Math.max(1, (process.stdout.rows || 24) - 3);
-      const transform = getTransformRef.current
-        ? getTransformRef.current(time)
-        : defaultTransform(time);
-      setFrame(renderFrame(resolvedTriangles, time, cols, rows, zoom, chars, lights, transform));
+
+
+      let trianglesForFrame: Triangle[];
+      let frameTransform: Matrix4;
+
+      if (objectsRef.current) {
+        // Per-object mode: apply each object's own transform and merge.
+        trianglesForFrame = [];
+        for (const obj of objectsRef.current) {
+          const m = obj.getTransform ? obj.getTransform(time) : identity;
+          for (const tri of obj.triangles) {
+            trianglesForFrame.push({
+              a: tri.a.clone().applyMatrix4(m),
+              b: tri.b.clone().applyMatrix4(m),
+              c: tri.c.clone().applyMatrix4(m),
+            });
+          }
+        }
+        frameTransform = getTransformRef.current
+          ? getTransformRef.current(time)
+          : identity;
+      } else {
+        // Single-object (or flat triangles) mode: one global transform.
+        trianglesForFrame = resolvedTriangles;
+        frameTransform = getTransformRef.current
+          ? getTransformRef.current(time)
+          : defaultTransform(time);
+      }
+
+      setFrame(renderFrame(trianglesForFrame, time, cols, rows, zoom, chars, lights, frameTransform));
     }, 1000 / fps);
 
     return () => clearInterval(interval);
