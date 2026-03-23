@@ -9,6 +9,20 @@ const FOV = 1.2;
 
 type Proj = { sx: number; sy: number; dz: number };
 
+
+/**
+ * The default auto-rotation applied when no custom transform is provided.
+ * Exported so callers can compose it with their own transforms.
+ *
+ * @param time - Elapsed time in seconds.
+ */
+export function defaultTransform(time: number): Matrix4 {
+  const rotX = new Matrix4().makeRotationX(time * 0.7);
+  const rotY = new Matrix4().makeRotationY(time);
+  return new Matrix4().multiplyMatrices(rotX, rotY);
+}
+
+
 /**
  * Renders a single ASCII frame from the given triangle list.
  *
@@ -19,6 +33,7 @@ type Proj = { sx: number; sy: number; dz: number };
  * @param eyeZ      - Camera Z distance (zoom level).
  * @param chars     - ASCII character ramp, dark to light.
  * @param lights    - List of lights (default: single directional light).
+ * @param transform - Pre-computed transform matrix.
  * @returns A multi-line string representing the ASCII frame.
  */
 
@@ -30,14 +45,13 @@ export function renderFrame(
   eyeZ: number,
   chars: string = DEFAULT_CHARS,
   lights: Light[] = DEFAULT_LIGHTS,
+  transform?: Matrix4,
 ): string {
   const vpW = cols * CHAR_ASPECT;
   const vpH = rows;
   const uniformScale = Math.min(vpW, vpH);
 
-  const rotX = new Matrix4().makeRotationX(time * 0.7);
-  const rotY = new Matrix4().makeRotationY(time);
-  const rot = new Matrix4().multiplyMatrices(rotX, rotY);
+  const rot = transform ?? defaultTransform(time);
 
   // Reused projection outputs to reduce GC churn
   const pa: Proj = { sx: 0, sy: 0, dz: 0 };

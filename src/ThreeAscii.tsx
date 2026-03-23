@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text, useInput } from 'ink';
-import { BufferGeometry, Vector3, TorusKnotGeometry } from 'three';
+import { BufferGeometry, Matrix4, TorusKnotGeometry } from 'three';
 import { extractTriangles, normalizeGeometry } from './geometry.js';
 import type { Triangle } from './geometry.js';
-import { renderFrame } from './rasterizer.js';
+import { renderFrame, defaultTransform } from './rasterizer.js';
 import type {Light} from "./lights.js";
 import { DEFAULT_LIGHTS} from "./lights.js";
 
@@ -26,6 +26,21 @@ export interface ThreeAsciiProps {
   rows?: number;
   /** Lights in the scene (default: single directional light) */
   lights?: Light[];
+
+  /**
+   * Custom transform function called every frame with elapsed time (seconds).
+   * Should return a `Matrix4` that is applied to all triangles before projection.
+   * When omitted, the default auto-rotation (`defaultTransform`) is used.
+   *
+   * @example
+   * // Slow Y-only spin
+   * getTransform={(t) => new Matrix4().makeRotationY(t * 0.3)}
+   *
+   * @example
+   * // Build on the default animation
+   * getTransform={(t) => defaultTransform(t).multiply(new Matrix4().makeRotationZ(t * 0.2))}
+   */
+  getTransform?: (time: number) => Matrix4;
 }
 
 const DEFAULT_FPS = 20;
@@ -44,9 +59,15 @@ export function ThreeAscii({
   cols: colsProp,
   rows: rowsProp,
   lights = DEFAULT_LIGHTS,
+  getTransform,
 }: ThreeAsciiProps): React.ReactElement {
   const [zoom, setZoom] = useState(initialZoom);
   const [frame, setFrame] = useState('');
+
+  const getTransformRef = React.useRef(getTransform);
+  React.useEffect(() => {
+    getTransformRef.current = getTransform;
+  });
 
   // Resolve triangles once (or when inputs change)
   const resolvedTriangles: Triangle[] = React.useMemo(() => {
@@ -76,7 +97,10 @@ export function ThreeAscii({
       const time = (Date.now() - start) / 1000;
       const cols = colsProp ?? (process.stdout.columns || 80);
       const rows = rowsProp ?? Math.max(1, (process.stdout.rows || 24) - 3);
-      setFrame(renderFrame(resolvedTriangles, time, cols, rows, zoom, chars, lights));
+      const transform = getTransformRef.current
+        ? getTransformRef.current(time)
+        : defaultTransform(time);
+      setFrame(renderFrame(resolvedTriangles, time, cols, rows, zoom, chars, lights, transform));
     }, 1000 / fps);
 
     return () => clearInterval(interval);
