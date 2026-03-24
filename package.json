@@ -1,6 +1,6 @@
 {
   "name": "ink-three",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Three.js ASCII renderer component for Ink",
   "main": "dist/index.js",
