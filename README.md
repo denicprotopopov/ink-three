@@ -88,26 +88,77 @@ render(
 );
 ```
 
-## Animated procedural geometry source
+## MarchingCubes (animated blobs)
 
-For high-frequency procedural meshes (for example MarchingCubes), pass a
-stable animated source object once and let `<ThreeAscii />` pull updated
-triangles internally each frame:
+Render animated MarchingCubes blobs. Pass `getTransform` returning an identity
+matrix to disable the default auto-spin so the shape stays still while the
+blobs animate:
 
 ```tsx
-import type { AnimatedGeometrySource } from 'ink-three';
+import React, { useEffect, useMemo, useState } from 'react';
+import { render } from 'ink';
+import { ThreeAscii, extractTriangles } from 'ink-three';
+import * as THREE from 'three';
+import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
 
-const source: AnimatedGeometrySource = {
-  update(dt) {
-    // mutate internal mesh state / triangle buffer in place
-  },
-  getTriangles() {
-    return trianglesBuffer;
-  },
-};
+function MarchingCubesAscii() {
+  const effect = useMemo(() => {
+    const material = new THREE.MeshBasicMaterial();
+    const mc = new MarchingCubes(20, material, true, true, 100000);
+    mc.enableUvs = false;
+    mc.enableColors = false;
+    mc.isolation = 80;
+    return mc;
+  }, []);
 
-render(<ThreeAscii animatedGeometry={source} />);
+  const [triangles, setTriangles] = useState(() => {
+    effect.reset();
+    effect.addBall(0.5, 0.5, 0.5, 0.6, 12);
+    effect.update();
+    return extractTriangles(effect.geometry.clone());
+  });
+
+  useEffect(() => {
+    const start = Date.now();
+
+    const id = setInterval(() => {
+      const t = (Date.now() - start) / 1000;
+
+      effect.reset();
+
+      const numBlobs = 3;
+      const subtract = 12;
+      const strength = 0.8;
+
+      for (let i = 0; i < numBlobs; i++) {
+        const x = Math.sin(t * 0.7 + i * 1.7) * 0.18 + 0.5;
+        const y = Math.cos(t * 0.9 + i * 1.3) * 0.18 + 0.5;
+        const z = Math.sin(t * 0.8 + i * 2.1) * 0.18 + 0.5;
+        effect.addBall(x, y, z, strength, subtract);
+      }
+
+      effect.update();
+
+      setTriangles(extractTriangles(effect.geometry.clone()));
+    }, 250);
+
+    return () => clearInterval(id);
+  }, [effect]);
+
+  return (
+    <ThreeAscii
+      triangles={triangles}
+      getTransform={() => new THREE.Matrix4()}
+    />
+  );
+}
+
+render(<MarchingCubesAscii />);
 ```
+
+The key line is `getTransform={() => new THREE.Matrix4()}` — returning an
+identity matrix tells `<ThreeAscii />` to skip the default auto-spin, so the
+only motion you see is the blobs morphing.
 
 ## Multi-object scenes
 
