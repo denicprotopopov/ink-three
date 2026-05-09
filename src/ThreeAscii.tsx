@@ -233,19 +233,17 @@ export function ThreeAscii({
       const time = (Date.now() - start) / 1000;
       const cols = colsProp ?? (process.stdout.columns || 80);
       const rows = rowsProp ?? Math.max(1, (process.stdout.rows || 24) - 3);
+      const dt = prevTimeRef.current === 0 ? 0 : time - prevTimeRef.current;
 
       let trianglesForFrame: Triangle[];
       let frameTransform: Matrix4;
 
       if (animatedGLTFRef.current) {
-
-        const dt = prevTimeRef.current === 0 ? 0 : time - prevTimeRef.current;
         animatedGLTFRef.current.update(dt);
         trianglesForFrame = animatedGLTFRef.current.getTriangles();
 
         frameTransform = resolveFrameTransform(time, false);
       } else if (animatedGeometryRef.current) {
-        const dt = prevTimeRef.current === 0 ? 0 : time - prevTimeRef.current;
         animatedGeometryRef.current.update(dt);
         trianglesForFrame = animatedGeometryRef.current.getTriangles();
         frameTransform = resolveFrameTransform(time, false);
