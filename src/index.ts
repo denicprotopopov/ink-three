@@ -4,6 +4,7 @@ import './shims.js';
 export { ThreeAscii } from './ThreeAscii.js';
 export type { ThreeAsciiProps, SceneObject } from './ThreeAscii.js';
 export { default } from './ThreeAscii.js';
+export type { AnimatedGeometrySource } from './animatedGeometry.js';
 export { loadGLTF, loadGLTFAnimated } from './loader.js';
 export type { AnimatedGLTFScene } from './loader.js';
 export { extractTriangles, normalizeGeometry } from './geometry.js';

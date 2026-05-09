@@ -7,6 +7,7 @@ import { renderFrame, defaultTransform } from './rasterizer.js';
 import type { Light } from './lights.js';
 import { DEFAULT_LIGHTS } from './lights.js';
 import type { AnimatedGLTFScene } from './loader.js';
+import type { AnimatedGeometrySource } from './animatedGeometry.js';
 
 /**
  * A single renderable object in a multi-object scene.
@@ -48,7 +49,8 @@ export interface ThreeAsciiProps {
   /**
    * An animated GLTF/GLB scene created with {@link loadGLTFAnimated}.
    *
-   * When set this takes priority over `objects`, `triangles`, and `geometry`.
+   * When set this takes priority over `animatedGeometry`, `objects`,
+   * `triangles`, and `geometry`.
    * The `AnimationMixer` is driven automatically every frame (no manual
    * `update()` calls needed). 
    *
@@ -67,6 +69,13 @@ export interface ThreeAsciiProps {
    * );
    */
   animatedGLTF?: AnimatedGLTFScene;
+  /**
+   * Generic animated geometry source for procedural meshes (e.g. MarchingCubes).
+   *
+   * Pass a stable source object once; `<ThreeAscii />` will call `update(dt)`
+   * and pull `getTriangles()` internally each frame.
+   */
+  animatedGeometry?: AnimatedGeometrySource;
   /** Frames per second (default: 20) */
   fps?: number;
   /** ASCII character ramp from dark to light (default: ' .,:;+=*#%@') */
@@ -131,6 +140,7 @@ export function ThreeAscii({
   triangles: trianglesProp,
   objects: objectsProp,
   animatedGLTF: animatedGLTFProp,
+  animatedGeometry: animatedGeometryProp,
   rotation,
   fps = DEFAULT_FPS,
   chars,
@@ -147,6 +157,7 @@ export function ThreeAscii({
   const getTransformRef = React.useRef(getTransform);
   const objectsRef = React.useRef(objectsProp);
   const animatedGLTFRef = React.useRef(animatedGLTFProp);
+  const animatedGeometryRef = React.useRef(animatedGeometryProp);
 
   const prevTimeRef = React.useRef(0);
 
@@ -164,6 +175,7 @@ export function ThreeAscii({
     getTransformRef.current = getTransform;
     objectsRef.current = objectsProp;
     animatedGLTFRef.current = animatedGLTFProp;
+    animatedGeometryRef.current = animatedGeometryProp;
     rotationMatrixRef.current = rotationMatrix;
   });
 
@@ -228,8 +240,14 @@ export function ThreeAscii({
       if (animatedGLTFRef.current) {
 
         const dt = prevTimeRef.current === 0 ? 0 : time - prevTimeRef.current;
-        trianglesForFrame = animatedGLTFRef.current.update(dt);
+        animatedGLTFRef.current.update(dt);
+        trianglesForFrame = animatedGLTFRef.current.getTriangles();
 
+        frameTransform = resolveFrameTransform(time, false);
+      } else if (animatedGeometryRef.current) {
+        const dt = prevTimeRef.current === 0 ? 0 : time - prevTimeRef.current;
+        animatedGeometryRef.current.update(dt);
+        trianglesForFrame = animatedGeometryRef.current.getTriangles();
         frameTransform = resolveFrameTransform(time, false);
       } else if (objectsRef.current) {
         // Per-object mode: apply each object's own transform and merge.

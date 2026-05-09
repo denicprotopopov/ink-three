@@ -88,6 +88,27 @@ render(
 );
 ```
 
+## Animated procedural geometry source
+
+For high-frequency procedural meshes (for example MarchingCubes), pass a
+stable animated source object once and let `<ThreeAscii />` pull updated
+triangles internally each frame:
+
+```tsx
+import type { AnimatedGeometrySource } from 'ink-three';
+
+const source: AnimatedGeometrySource = {
+  update(dt) {
+    // mutate internal mesh state / triangle buffer in place
+  },
+  getTriangles() {
+    return trianglesBuffer;
+  },
+};
+
+render(<ThreeAscii animatedGeometry={source} />);
+```
+
 ## Multi-object scenes
 
 Render multiple objects together with per-object animation and correct depth-sorting:
@@ -141,6 +162,7 @@ render(<ThreeAscii geometry={geo} lights={lights} />);
 | `triangles` | `Triangle[]` | — | Pre-extracted triangles (takes priority over `geometry`) |
 | `objects` | `SceneObject[]` | — | Multiple objects with independent per-frame transforms |
 | `animatedGLTF` | `AnimatedGLTFScene` | — | Animated GLTF scene from `loadGLTFAnimated` |
+| `animatedGeometry` | `AnimatedGeometrySource` | — | Pull-based animated geometry source for procedural meshes |
 | `rotation` | `[number, number, number]` | — | Static Euler XYZ rotation in radians |
 | `getTransform` | `(time: number) => Matrix4` | auto-spin | Per-frame transform for the whole scene; when omitted the default auto-spin is used (single-object mode) |
 | `lights` | `Light[]` | directional `[1,1,1]` | Scene lights. use `ambientLight`, `directionalLight`, `pointLight` helpers |
